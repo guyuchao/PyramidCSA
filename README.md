@@ -29,5 +29,8 @@ If you think this work is helpful, please cite
 }
 ```
 
+## Related Project
+The feature extraction backbone is borrowed from [d-li14/mobilenetv3.pytorch](https://github.com/d-li14/mobilenetv3.pytorch)
+
 ## Concat
 Any questions and suggestions, please email [ycgu@mail.nankai.edu.cn](ycgu@mail.nankai.edu.cn).
