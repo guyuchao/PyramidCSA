@@ -4,11 +4,26 @@ Code for "Pyramid Constrained Self-Attention Network for Fast Video Salient Obje
 
 ## Build
 
-comming soon
+```bash
+conda create -n PCSA python=3.6
+conda activate PCSA
+conda install pytorch=1.1.0 torchvision -c pytorch
+pip install tensorboardX tqdm Pillow==6.2.2
+pip install git+https://github.com/pytorch/tnt.git@master
+cd Models/PCSA
+python setup.py build develop
+```
 
 ## Training
 
-comming soon
+### pretrain phase
+```bash
+bash pretrain.sh
+```
+### finetune phase
+```bash
+bash finetune.sh
+```
 
 ## Results
 The pretrained model, and result saliency map can be downloaded [here](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781).
@@ -17,6 +32,11 @@ The pretrained model, and result saliency map can be downloaded [here](https://p
 For VSOD, we use the evaluation code provided by [DAVSOD](https://github.com/DengPingFan/DAVSOD).
 
 For UVOS, we use the evaluation code provided by [Davis16](https://github.com/fperazzi/davis).
+
+## Speed Evaluation
+```python3
+python speed.py
+```
 
 ## Cite
 If you think this work is helpful, please cite

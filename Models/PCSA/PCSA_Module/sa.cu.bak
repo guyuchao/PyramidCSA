@@ -1,0 +1,249 @@
+#include <torch/torch.h>
+//#include <torch/extension.h>
+#include <cuda_runtime.h>
+#include <iostream>
+#include <stdio.h>
+
+#define TensorAccessor5D torch::PackedTensorAccessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>
+
+template <typename scalar_t>
+__global__
+void sa_weight_forward_kernel(
+	const TensorAccessor5D query,
+	const TensorAccessor5D key,
+	TensorAccessor5D weight,int B,int T,int C,int H,int W){
+	int col = blockIdx.x * blockDim.x + threadIdx.x;//col
+	int row = blockIdx.y * blockDim.y + threadIdx.y;//row
+	int time = blockIdx.z;//time
+	//query B*T*C*H*W
+	//key B*T*C*H*W
+	//weight B*T*9T*H*W
+	if(col<W&&row<H&&time<T){
+		for(int batch=0;batch<B;++batch){
+			for(int t=0;t<T;++t){
+				for(int h=-1;h<=1;h++){
+					for(int w=-1;w<=1;w++){
+						float sum=0.0;
+						if(row+h<H&&row+h>=0&&col+w<W&&col+w>=0){
+							for(int channel=0;channel<C;++channel){
+								float q=query[batch][time][channel][row][col];
+								float k=key[batch][t][channel][row+h][col+w];
+								sum+=q*k;
+							}
+						}
+						weight[batch][time][t*9+(h+1)*3+(w+1)][row][col]=sum;
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename scalar_t>
+__global__
+void sa_map_forward_kernel(
+	const TensorAccessor5D weight,
+	const TensorAccessor5D proj,
+	TensorAccessor5D out,int B,int T,int C,int H,int W){
+	int col = blockIdx.x * blockDim.x + threadIdx.x;//col
+	int row = blockIdx.y * blockDim.y + threadIdx.y;//row
+	int time = blockIdx.z;//time
+	//weight B*T*9T*H*W
+	//proj B*T*C*H*W
+	//out B*T*C*H*W
+	if(col<W&&row<H&&time<T){
+		for(int batch=0;batch<B;++batch){
+			for(int t=0;t<T;++t){
+				for(int h=-1;h<=1;h++){
+					for(int w=-1;w<=1;w++){
+						if(row+h<H&&row+h>=0&&col+w<W&&col+w>=0){
+							float weight_temp=weight[batch][time][t*9+(h+1)*3+(w+1)][row][col];
+							for(int channel=0;channel<C;++channel){
+								float proj_value=proj[batch][t][channel][row+h][col+w];
+								out[batch][time][channel][row][col]+=weight_temp*proj_value;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename scalar_t>
+__global__
+void sa_weight_backward_kernel_query(
+	const TensorAccessor5D dw,
+	const TensorAccessor5D key,
+	TensorAccessor5D dquery,int B,int T,int C,int H,int W){
+	int col = blockIdx.x * blockDim.x + threadIdx.x;//col
+	int row = blockIdx.y * blockDim.y + threadIdx.y;//row
+	int time = blockIdx.z;//time
+	//weight B*T*9T*H*W
+	//proj B*T*C*H*W
+	//out B*T*C*H*W
+	if(col<W&&row<H&&time<T){
+		for(int batch=0;batch<B;++batch){
+			for(int t=0;t<T;++t){
+				for(int h=-1;h<=1;h++){
+					for(int w=-1;w<=1;w++){
+						if(row+h<H&&row+h>=0&&col+w<W&&col+w>=0){
+							float _dw=dw[batch][time][t*9+(h+1)*3+(w+1)][row][col];
+							for(int channel=0;channel<C;++channel){
+								float _key=key[batch][t][channel][row+h][col+w];
+								dquery[batch][time][channel][row][col]+=_dw*_key;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename scalar_t>
+__global__
+void sa_weight_backward_kernel_key(
+	const TensorAccessor5D dw,
+	const TensorAccessor5D query,
+	TensorAccessor5D dkey,int B,int T,int C,int H,int W){
+	int col = blockIdx.x * blockDim.x + threadIdx.x;//col
+	int row = blockIdx.y * blockDim.y + threadIdx.y;//row
+	int time = blockIdx.z;//time
+	//weight B*T*9T*H*W
+	//proj B*T*C*H*W
+	//out B*T*C*H*W
+	if(col<W&&row<H&&time<T){
+		for(int batch=0;batch<B;++batch){
+			for(int t=0;t<T;++t){
+				for(int h=-1;h<=1;h++){
+					for(int w=-1;w<=1;w++){
+						if(row+h<H&&row+h>=0&&col+w<W&&col+w>=0){
+							float _dw=dw[batch][time][t*9+(h+1)*3+(w+1)][row][col];
+							for(int channel=0;channel<C;++channel){
+								float _query=query[batch][t][channel][row+h][col+w];
+								dkey[batch][time][channel][row][col]+=_dw*_query;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename scalar_t>
+__global__
+void sa_map_backward_kernel_weight(
+	const TensorAccessor5D dout,
+	const TensorAccessor5D proj,
+	TensorAccessor5D dweight,int B,int T,int C,int H,int W){
+	int col = blockIdx.x * blockDim.x + threadIdx.x;//col
+	int row = blockIdx.y * blockDim.y + threadIdx.y;//row
+	int time = blockIdx.z;//time
+	//weight B*T*9T*H*W
+	//proj B*T*C*H*W
+	//out B*T*C*H*W
+	if(col<W&&row<H&&time<T){
+		for(int batch=0;batch<B;++batch){
+			for(int t=0;t<T;++t){
+				for(int channel=0;channel<C;++channel){
+					float _dout=dout[batch][time][channel][row][col];
+					for(int h=-1;h<=1;h++){
+						for(int w=-1;w<=1;w++){
+							if(row+h<H&&row+h>=0&&col+w<W&&col+w>=0){
+								float _proj=proj[batch][t][channel][row+h][col+w];
+								dweight[batch][time][t*9+(h+1)*3+(w+1)][row][col]+=_dout*_proj;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename scalar_t>
+__global__
+void sa_map_backward_kernel_proj(
+	const TensorAccessor5D dout,
+	const TensorAccessor5D weight,
+	TensorAccessor5D dproj,int B,int T,int C,int H,int W){
+	int col = blockIdx.x * blockDim.x + threadIdx.x;//col
+	int row = blockIdx.y * blockDim.y + threadIdx.y;//row
+	int time = blockIdx.z;//time
+	//weight B*T*9T*H*W
+	//proj B*T*C*H*W
+	//out B*T*C*H*W
+	if(col<W&&row<H&&time<T){
+		for(int batch=0;batch<B;++batch){
+			for(int t=0;t<T;++t){
+				for(int h=-1;h<=1;h++){
+					for(int w=-1;w<=1;w++){
+						if(row+h<H&&row+h>=0&&col+w<W&&col+w>=0){
+							float weight_temp=weight[batch][time][t*9+(h+1)*3+(w+1)][row][col];
+							for(int channel=0;channel<C;++channel){
+								dproj[batch][t][channel][row+h][col+w]+=weight_temp*dout[batch][time][channel][row][col];
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void _sa_weight_forward_cuda(const torch::Tensor& query,const torch::Tensor& key,torch::Tensor& weight,int B,int T,int C,int H,int W){
+	dim3 threads(32,32);
+	dim3 blocks((W+threads.x-1)/threads.x,(H+threads.y-1)/threads.y,T);
+
+	AT_DISPATCH_FLOATING_TYPES(weight.scalar_type(), "sa_weight_forward_cuda", ([&] {
+		sa_weight_forward_kernel<scalar_t><<<blocks, threads>>>(
+			query.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>(),
+			key.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>(),
+			weight.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>(),B,T,C,H,W);
+	  }));
+}
+
+void _sa_map_forward_cuda(const torch::Tensor& weight,const torch::Tensor& proj,torch::Tensor& out,int B,int T,int C,int H,int W){
+	dim3 threads(32,32);
+	dim3 blocks((W+threads.x-1)/threads.x,(H+threads.y-1)/threads.y,T);
+	AT_DISPATCH_FLOATING_TYPES(weight.scalar_type(), "sa_weight_forward_cuda", ([&] {
+		sa_map_forward_kernel<scalar_t><<<blocks, threads>>>(
+		weight.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>(),
+		proj.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>(),
+		out.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>(),B,T,C,H,W);
+	}));
+}
+
+void _sa_weight_backward_cuda(const torch::Tensor& dw,const torch::Tensor& query,
+		const torch::Tensor& key,torch::Tensor& dquery,torch::Tensor& dkey,
+		int B,int T,int C,int H,int W){
+	dim3 threads(32,32);
+	dim3 blocks((W+threads.x-1)/threads.x,(H+threads.y-1)/threads.y,T);
+	AT_DISPATCH_FLOATING_TYPES(dw.scalar_type(), "sa_weight_forward_cuda", ([&] {
+		const TensorAccessor5D dw_acc=dw.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		const TensorAccessor5D query_acc=query.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		const TensorAccessor5D key_acc=key.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		TensorAccessor5D dquery_acc=dquery.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		TensorAccessor5D dkey_acc=dkey.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		sa_weight_backward_kernel_query<scalar_t><<<blocks, threads>>>(dw_acc,key_acc,dquery_acc,B,T,C,H,W);
+		sa_weight_backward_kernel_key<scalar_t><<<blocks, threads>>>(dw_acc,query_acc,dkey_acc,B,T,C,H,W);
+	}));
+}
+
+void _sa_map_backward_cuda(const torch::Tensor& dout,const torch::Tensor& weight,
+		const torch::Tensor& proj,torch::Tensor& dweight,torch::Tensor& dproj,
+		int B,int T,int C,int H,int W){
+	dim3 threads(32,32);
+	dim3 blocks((W+threads.x-1)/threads.x,(H+threads.y-1)/threads.y,T);
+	AT_DISPATCH_FLOATING_TYPES(dout.scalar_type(), "sa_weight_forward_cuda", ([&] {
+		const TensorAccessor5D dout_acc=dout.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		const TensorAccessor5D weight_acc=weight.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		const TensorAccessor5D proj_acc=proj.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		TensorAccessor5D dweight_acc=dweight.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		TensorAccessor5D dproj_acc=dproj.packed_accessor<scalar_t,5,torch::RestrictPtrTraits,int32_t>();
+		sa_map_backward_kernel_weight<scalar_t><<<blocks, threads>>>(dout_acc,proj_acc,dweight_acc,B,T,C,H,W);
+		sa_map_backward_kernel_proj<scalar_t><<<blocks, threads>>>(dout_acc,weight_acc,dproj_acc,B,T,C,H,W);
+	}));
+}

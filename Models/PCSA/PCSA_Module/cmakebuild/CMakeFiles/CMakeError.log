@@ -1,0 +1,55 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_38ddb/fast"
+/usr/bin/make -f CMakeFiles/cmTC_38ddb.dir/build.make CMakeFiles/cmTC_38ddb.dir/build
+make[1]: 进入目录“/home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp”
+Building C object CMakeFiles/cmTC_38ddb.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_38ddb.dir/CheckSymbolExists.c.o   -c /home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_38ddb
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_38ddb.dir/link.txt --verbose=1
+/usr/bin/cc      -rdynamic CMakeFiles/cmTC_38ddb.dir/CheckSymbolExists.c.o  -o cmTC_38ddb 
+CMakeFiles/cmTC_38ddb.dir/CheckSymbolExists.c.o：在函数‘main’中：
+CheckSymbolExists.c:(.text+0x1b)：对‘pthread_create’未定义的引用
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_38ddb.dir/build.make:97: recipe for target 'cmTC_38ddb' failed
+make[1]: *** [cmTC_38ddb] Error 1
+make[1]: 离开目录“/home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp”
+Makefile:126: recipe for target 'cmTC_38ddb/fast' failed
+make: *** [cmTC_38ddb/fast] Error 2
+
+File /home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_8df24/fast"
+/usr/bin/make -f CMakeFiles/cmTC_8df24.dir/build.make CMakeFiles/cmTC_8df24.dir/build
+make[1]: 进入目录“/home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp”
+Building C object CMakeFiles/cmTC_8df24.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_8df24.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.10/Modules/CheckFunctionExists.c
+Linking C executable cmTC_8df24
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_8df24.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_8df24.dir/CheckFunctionExists.c.o  -o cmTC_8df24 -lpthreads 
+/usr/bin/ld: 找不到 -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_8df24.dir/build.make:97: recipe for target 'cmTC_8df24' failed
+make[1]: *** [cmTC_8df24] Error 1
+make[1]: 离开目录“/home/guyuchao/ssd/PycharmProjects/videofastsal/Models/plocaltnonlocal/SelfAttention_Module/cmakebuild/CMakeFiles/CMakeTmp”
+Makefile:126: recipe for target 'cmTC_8df24/fast' failed
+make: *** [cmTC_8df24/fast] Error 2
+
+
