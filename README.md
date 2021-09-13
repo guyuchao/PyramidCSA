@@ -26,7 +26,7 @@ bash finetune.sh
 ```
 
 ## Results
-The trained model, and result saliency map can be downloaded [here](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781).
+The result saliency map can be downloaded [here](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781).
 
 ## Evaluation
 For VSOD, we use the evaluation code provided by [DAVSOD](https://github.com/DengPingFan/DAVSOD).
