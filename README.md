@@ -26,7 +26,7 @@ bash finetune.sh
 ```
 
 ## Results
-The result saliency map can be downloaded [here](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781).
+The result saliency map can be downloaded [baidu pan](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781), or [google drive](https://drive.google.com/drive/folders/1Xe2Eob173M6e6dcapThrOD0rmnuDA2MN?usp=sharing).
 
 ## Evaluation
 For VSOD, we use the evaluation code provided by [DAVSOD](https://github.com/DengPingFan/DAVSOD).
