@@ -26,7 +26,7 @@ bash finetune.sh
 ```
 
 ## Results
-The result saliency map can be downloaded [baidu pan](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781), or [google drive](https://drive.google.com/drive/folders/1Xe2Eob173M6e6dcapThrOD0rmnuDA2MN?usp=sharing).
+The result saliency map and model can be downloaded [baidu pan](https://pan.baidu.com/s/1bktiBwBUprIpfstK9fDehg) (password t781), or [google drive](https://drive.google.com/drive/folders/1Xe2Eob173M6e6dcapThrOD0rmnuDA2MN?usp=sharing).
 
 ## Evaluation
 For VSOD, we use the evaluation code provided by [DAVSOD](https://github.com/DengPingFan/DAVSOD).
@@ -49,8 +49,12 @@ If you think this work is helpful, please cite
 }
 ```
 
+## License
+This project is licensed under the [Creative Commons NonCommercial (CC BY-NC 3.0)](https://creativecommons.org/licenses/by-nc/3.0/) license where only
+non-commercial usage is allowed. For commercial usage, please contact us.
+
 ## Related Project
 The feature extraction backbone is borrowed from [d-li14/mobilenetv3.pytorch](https://github.com/d-li14/mobilenetv3.pytorch)
 
-## Concat
+## Contact
 Any questions and suggestions, please email [ycgu@mail.nankai.edu.cn](ycgu@mail.nankai.edu.cn).
